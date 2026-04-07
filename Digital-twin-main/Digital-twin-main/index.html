@@ -1156,8 +1156,7 @@
                         <span class="btn-text">Create Account</span>
                     </button>
 
-
-                    <!-- Success Message -->
+                    <!-- Auth Result Message -->
                     <div class="success-message" id="successMessage">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
@@ -1166,8 +1165,13 @@
                         <p>Login successful! Redirecting...</p>
                     </div>
 
+                    <!-- Auth Error Message -->
+                    <div class="error-message" id="authError" style="margin-top: 12px; display: none;">
+                        <p>Invalid credentials</p>
+                    </div>
 
                 </form>
+
             </div>
 
             <!-- Sign Up Card -->
@@ -1332,9 +1336,12 @@
             passwordError.classList.remove('show');
         });
 
-        // Form Submission
+        // Form Submission - Real Authentication
         loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
+            
+            const authError = document.getElementById('authError');
+            authError.style.display = 'none';
             
             let isValid = true;
             
@@ -1367,19 +1374,26 @@
                 localStorage.removeItem('savedEmail');
             }
             
-            // Simulate login (2 second delay)
+            // Real authentication
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const user = users.find(u => u.email === emailInput.value);
+            
             setTimeout(() => {
                 loginBtn.classList.remove('loading');
                 loginBtn.disabled = false;
-                successMessage.classList.add('show');
                 
-                // In a real app, you would redirect here
-                console.log('Login successful:', {
-                    email: emailInput.value,
-                    rememberMe: rememberMe.checked
-                });
-            }, 2000);
+                if (user && user.password === passwordInput.value) {
+                    successMessage.querySelector('p').textContent = `Logged in as ${user.name}! Redirecting...`;
+                    successMessage.classList.add('show');
+                    localStorage.setItem('currentUser', JSON.stringify(user));
+                    console.log('Login successful:', user);
+                } else {
+                    authError.style.display = 'block';
+                    console.log('Login failed: Invalid credentials');
+                }
+            }, 1500);
         });
+
 
         // Enter key submission
         passwordInput.addEventListener('keypress', (e) => {
@@ -1411,7 +1425,7 @@
             signupSuccessMessage.classList.remove('show');
         });
 
-        // Sign Up Form Submission
+        // Sign Up Form Submission - Real Signup
         signupForm.addEventListener('submit', (e) => {
             e.preventDefault();
             
@@ -1473,29 +1487,41 @@
             signupSubmitBtn.classList.add('loading');
             signupSubmitBtn.disabled = true;
             
-            // Simulate account creation
+            // Real signup
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const existingUser = users.find(u => u.email === signupEmail.value);
+            
             setTimeout(() => {
                 signupSubmitBtn.classList.remove('loading');
                 signupSubmitBtn.disabled = false;
-                signupSuccessMessage.classList.add('show');
                 
-                // Save to localStorage
-                localStorage.setItem('userEmail', signupEmail.value);
-                
-                // Redirect to login after 2 seconds
-                setTimeout(() => {
-                    signupCard.style.display = 'none';
-                    loginCard.style.display = 'block';
-                    signupForm.reset();
-                    signupSuccessMessage.classList.remove('show');
-                }, 2000);
-                
-                console.log('Account created:', {
-                    name: signupName.value,
-                    email: signupEmail.value
-                });
-            }, 2000);
+                if (existingUser) {
+                    signupEmailError.textContent = 'Email already registered';
+                    signupEmail.classList.add('error');
+                    signupEmailError.classList.add('show');
+                } else {
+                    const newUser = {
+                        name: signupName.value.trim(),
+                        email: signupEmail.value,
+                        password: signupPassword.value
+                    };
+                    users.push(newUser);
+                    localStorage.setItem('users', JSON.stringify(users));
+                    signupSuccessMessage.querySelector('p').textContent = `Account created for ${newUser.name}!`;
+                    signupSuccessMessage.classList.add('show');
+                    
+                    setTimeout(() => {
+                        signupCard.style.display = 'none';
+                        loginCard.style.display = 'block';
+                        signupForm.reset();
+                        signupSuccessMessage.classList.remove('show');
+                    }, 2000);
+                    
+                    console.log('Account created:', newUser);
+                }
+            }, 1500);
         });
     </script>
+
 </body>
 </html>
